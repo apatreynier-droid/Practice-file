@@ -1,0 +1,226 @@
+import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.util.Stack;
+
+public class Main extends JFrame {
+    private final JTextArea textArea;
+    private final Stack<String> undoStack = new Stack<>();
+    private final Stack<String> redoStack = new Stack<>();
+    private final JFileChooser fileChooser = new JFileChooser();
+
+    // Helps avoid recording programmatic changes (undo/redo/open/clear)
+    private boolean isProgrammaticChange = false;
+    private String lastText = "";
+
+    public Main() {
+        setTitle("Stack Text Editor (Fixed Undo/Redo)");
+        setSize(800, 550);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        textArea = new JTextArea();
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        add(scrollPane, BorderLayout.CENTER);
+
+        // initialize lastText
+        lastText = textArea.getText();
+
+        // Menu Bar
+        JMenuBar menuBar = new JMenuBar();
+
+        // File Menu
+        JMenu fileMenu = new JMenu("File");
+        JMenuItem newFile = new JMenuItem("New");
+        JMenuItem openFile = new JMenuItem("Open");
+        JMenuItem saveFile = new JMenuItem("Save");
+        JMenuItem exit = new JMenuItem("Exit");
+        fileMenu.add(newFile);
+        fileMenu.add(openFile);
+        fileMenu.add(saveFile);
+        fileMenu.addSeparator();
+        fileMenu.add(exit);
+
+        // Edit Menu
+        JMenu editMenu = new JMenu("Edit");
+        JMenuItem undo = new JMenuItem("Undo");
+        JMenuItem redo = new JMenuItem("Redo");
+        JMenuItem copy = new JMenuItem("Copy");
+        JMenuItem paste = new JMenuItem("Paste");
+        JMenuItem cut = new JMenuItem("Cut");
+        JMenuItem clear = new JMenuItem("Clear");
+        editMenu.add(undo);
+        editMenu.add(redo);
+        editMenu.addSeparator();
+        editMenu.add(copy);
+        editMenu.add(paste);
+        editMenu.add(cut);
+        editMenu.add(clear);
+
+        menuBar.add(fileMenu);
+        menuBar.add(editMenu);
+        setJMenuBar(menuBar);
+
+        // Use platform-specific menu shortcut mask (Ctrl on Windows/Linux, Command on macOS)
+        int menuMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+
+        // Accelerators
+        newFile.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, menuMask));
+        openFile.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, menuMask));
+        saveFile.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, menuMask));
+        exit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, menuMask));
+
+        undo.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, menuMask));
+        redo.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, menuMask));
+        copy.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, menuMask));
+        paste.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, menuMask));
+        cut.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_X, menuMask));
+        clear.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D, menuMask));
+
+        // DocumentListener: record previous state (lastText) on every change
+        textArea.getDocument().addDocumentListener(new DocumentListener() {
+            private void changed() {
+                if (isProgrammaticChange) return;
+                // push the previous text state onto undo stack
+                undoStack.push(lastText);
+                // update lastText to current content
+                lastText = textArea.getText();
+                // new edit invalidates redo history
+                redoStack.clear();
+            }
+            public void insertUpdate(DocumentEvent e) { changed(); }
+            public void removeUpdate(DocumentEvent e) { changed(); }
+            public void changedUpdate(DocumentEvent e) { changed(); }
+        });
+
+        // Menu Actions
+        newFile.addActionListener(e -> {
+            // allow undo of "new"
+            undoStack.push(lastText);
+            isProgrammaticChange = true;
+            textArea.setText("");
+            lastText = "";
+            redoStack.clear();
+            isProgrammaticChange = false;
+        });
+
+        openFile.addActionListener(e -> openFile());
+        saveFile.addActionListener(e -> saveFile());
+        exit.addActionListener(e -> System.exit(0));
+
+        undo.addActionListener(e -> undoAction());
+        redo.addActionListener(e -> redoAction());
+        copy.addActionListener(e -> textArea.copy());
+        paste.addActionListener(e -> textArea.paste());
+        cut.addActionListener(e -> textArea.cut());
+        clear.addActionListener(e -> {
+            undoStack.push(lastText);
+            isProgrammaticChange = true;
+            textArea.setText("");
+            lastText = "";
+            redoStack.clear();
+            isProgrammaticChange = false;
+        });
+
+        // Ensure shortcuts work while text area has focus
+        // WHEN_FOCUSED ensures the mapping applies when typing in the text area.
+        InputMap im = textArea.getInputMap(JComponent.WHEN_FOCUSED);
+        ActionMap am = textArea.getActionMap();
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, menuMask), "undo");
+        am.put("undo", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                undoAction();
+            }
+        });
+
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, menuMask), "redo");
+        am.put("redo", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                redoAction();
+            }
+        });
+
+        // Map Save shortcut to menu Save too (optional)
+        im.put(KeyStroke.getKeyStroke(KeyEvent.VK_S, menuMask), "save");
+        am.put("save", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveFile();
+            }
+        });
+
+        setVisible(true);
+    }
+
+    // -------------------------
+    // Helper methods
+    // -------------------------
+    private void undoAction() {
+        if (!undoStack.isEmpty()) {
+            isProgrammaticChange = true;
+            // push current state to redo
+            redoStack.push(lastText);
+            String prev = undoStack.pop();
+            textArea.setText(prev);
+            lastText = prev;
+            isProgrammaticChange = false;
+        } else {
+            JOptionPane.showMessageDialog(this, "Nothing to undo!");
+        }
+    }
+
+    private void redoAction() {
+        if (!redoStack.isEmpty()) {
+            isProgrammaticChange = true;
+            // push current state to undo
+            undoStack.push(lastText);
+            String next = redoStack.pop();
+            textArea.setText(next);
+            lastText = next;
+            isProgrammaticChange = false;
+        } else {
+            JOptionPane.showMessageDialog(this, "Nothing to redo!");
+        }
+    }
+
+    private void openFile() {
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                // allow undo of open
+                undoStack.push(lastText);
+                isProgrammaticChange = true;
+                textArea.read(reader, null);
+                lastText = textArea.getText();
+                redoStack.clear();
+                isProgrammaticChange = false;
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Error opening file: " + ex.getMessage());
+                isProgrammaticChange = false;
+            }
+        }
+    }
+
+    private void saveFile() {
+        int result = fileChooser.showSaveDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+                textArea.write(writer);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Error saving file: " + ex.getMessage());
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(Main::new);
+    }
+}
