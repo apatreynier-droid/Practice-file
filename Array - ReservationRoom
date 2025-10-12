@@ -1,0 +1,81 @@
+package Practice;
+import java.util.Scanner;
+public class js {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        boolean[] rooms = new boolean[25];
+        int choice;
+
+        do {
+            System.out.println("\nSelect Choices:");
+            System.out.println("1. View Rooms");
+            System.out.println("2. Reserve Room");
+            System.out.println("3. Cancel Reservation");
+            System.out.println("4. Exit");
+            System.out.print("Enter your choice: ");
+            choice = sc.nextInt();
+
+            switch (choice) {
+                case 1:
+                    showRooms(rooms);
+                    break;
+                case 2:
+                    reserveRoom(rooms, sc);
+                    break;
+                case 3:
+                    cancelRoom(rooms, sc);
+                    break;
+                case 4:
+                    System.out.println("ty for using");
+                    break;
+                default:
+                    System.out.println("Invalid choice");
+            }
+        } while (choice != 4);
+    }
+
+    public static void showRooms(boolean[] rooms) {
+        for (int i = 0; i < rooms.length; i++) {
+            String type = getRoomType(i + 1);
+            String status = rooms[i] ? "Reserved" : "Available";
+            System.out.println("Room " + (i + 1) + " (" + type + "): " + status);
+        }
+    }
+
+    public static void reserveRoom(boolean[] rooms, Scanner sc) {
+        System.out.println("Enter Room (1-25) ");
+        int roomNum = sc.nextInt();
+        if (roomNum < 1 || roomNum > 25) {
+            System.out.println("Invalid Room Number!");
+            return;
+        }
+        if (rooms[roomNum - 1]) {
+            System.out.println("Room" + roomNum + "" + "Already Reserved!");
+        } else {
+            rooms[roomNum - 1] = true;
+            System.out.println("Room" + roomNum + "Reserved!");
+        }
+    }
+
+    public static void cancelRoom(boolean[] rooms, Scanner sc) {
+        int roomNum = sc.nextInt();
+        if (roomNum < 1 || roomNum > 25) {
+            System.out.println("Invalid Room Number!");
+            return;
+        }
+        if (!rooms[roomNum - 1]) {
+            System.out.println("Room" + roomNum + "Cancel Reserved!");
+        } else {
+            rooms[roomNum - 1] = true;
+            System.out.println("Room" + roomNum + "Canceled!");
+        }
+    }
+    public static String getRoomType(int roomNum) {
+        if (roomNum >= 1 && roomNum <= 5)
+            return "VIP";
+        else if (roomNum >= 6 && roomNum <= 15)
+        return "Middle Class";
+        else
+            return "Lower Class";
+    }
+}
