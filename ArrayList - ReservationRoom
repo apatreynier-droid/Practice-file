@@ -1,0 +1,94 @@
+package RoomReservation;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class RoomReservation {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        ArrayList<Boolean> rooms = new ArrayList<>();
+
+        for (int i = 0; i < 25; i++) {
+            rooms.add(false);
+        }
+
+        int choice;
+        do {
+            System.out.println("\nSelect Choices:");
+            System.out.println("1. View Rooms");
+            System.out.println("2. Reserve Room");
+            System.out.println("3. Cancel Reservation");
+            System.out.println("4. Exit");
+            System.out.print("Enter your choice: ");
+            choice = sc.nextInt();
+
+            switch (choice) {
+                case 1:
+                    showRooms(rooms);
+                    break;
+                case 2:
+                    reserveRoom(rooms, sc);
+                    break;
+                case 3:
+                    cancelRoom(rooms, sc);
+                    break;
+                case 4:
+                    System.out.println("Thank you for using our service!");
+                    break;
+                default:
+                    System.out.println("Invalid choice! Please try again.");
+            }
+        } while (choice != 4);
+    }
+
+    public static void showRooms(ArrayList<Boolean> rooms) {
+        System.out.println("\nRoom No. | Type | Status");
+        for (int i = 0; i < rooms.size(); i++) {
+            String type = getRoomType(i + 1);
+            String status = rooms.get(i) ? "Reserved" : "Available";
+            System.out.println("Room " + (i + 1) + " (" + type + "): " + status);
+        }
+    }
+
+    public static void reserveRoom(ArrayList<Boolean> rooms, Scanner sc) {
+        System.out.print("Enter room number to reserve (1–25): ");
+        int roomNum = sc.nextInt();
+
+        if (roomNum < 1 || roomNum > 25) {
+            System.out.println("Invalid room number!");
+            return;
+        }
+
+        if (rooms.get(roomNum - 1)) {
+            System.out.println("Room " + roomNum + " has already been reserved. Please choose another room.");
+        } else {
+            rooms.set(roomNum - 1, true);
+            System.out.println("Room " + roomNum + " reserved successfully!");
+        }
+    }
+
+    public static void cancelRoom(ArrayList<Boolean> rooms, Scanner sc) {
+        System.out.print("Enter room number to cancel (1–25): ");
+        int roomNum = sc.nextInt();
+
+        if (roomNum < 1 || roomNum > 25) {
+            System.out.println("Invalid room number!");
+            return;
+        }
+
+        if (!rooms.get(roomNum - 1)) {
+            System.out.println("Room " + roomNum + " is not reserved!");
+        } else {
+            rooms.set(roomNum - 1, false);
+            System.out.println("Reservation for Room " + roomNum + " canceled successfully!");
+        }
+    }
+
+    public static String getRoomType(int roomNum) {
+        if (roomNum >= 1 && roomNum <= 5)
+            return "VIP";
+        else if (roomNum >= 6 && roomNum <= 15)
+            return "Lower Box";
+        else
+            return "Upper Box";
+    }
+}
