@@ -1,0 +1,102 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.Stack;
+import java.util.ArrayList;
+
+public class OfficeDocumentStack extends JFrame {
+    private Stack<String> documentStack = new Stack<>();
+    private ArrayList<String> processedList = new ArrayList<>();
+
+    private JTextArea stackDisplay;
+    private JTextArea processedDisplay;
+    private JTextField inputField;
+
+    public OfficeDocumentStack() {
+        setTitle("Office Document Stack System");
+        setSize(600, 450);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
+
+        // ===== Top Input Panel =====
+        JPanel inputPanel = new JPanel();
+        inputPanel.add(new JLabel("Document:"));
+        inputField = new JTextField(15);
+        inputPanel.add(inputField);
+        JButton addButton = new JButton("Add (Push)");
+        JButton processButton = new JButton("Process (Pop)");
+        inputPanel.add(addButton);
+        inputPanel.add(processButton);
+        add(inputPanel, BorderLayout.NORTH);
+
+        // ===== Center Panel (Stack and Processed) =====
+        JPanel centerPanel = new JPanel(new GridLayout(1, 2, 10, 10));
+
+        // Stack area
+        stackDisplay = new JTextArea();
+        stackDisplay.setEditable(false);
+        stackDisplay.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        JScrollPane stackScroll = new JScrollPane(stackDisplay);
+        centerPanel.add(new JScrollPane(stackScroll));
+        stackScroll.setBorder(BorderFactory.createTitledBorder(" Current Stack (Top → Bottom)"));
+
+        // Processed area
+        processedDisplay = new JTextArea();
+        processedDisplay.setEditable(false);
+        processedDisplay.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        JScrollPane processedScroll = new JScrollPane(processedDisplay);
+        processedScroll.setBorder(BorderFactory.createTitledBorder(" Processed Documents"));
+        centerPanel.add(processedScroll);
+
+        add(centerPanel, BorderLayout.CENTER);
+
+        // ===== Button Actions =====
+        addButton.addActionListener(e -> addDocument());
+        processButton.addActionListener(e -> processDocument());
+    }
+
+    private void addDocument() {
+        String docName = inputField.getText().trim();
+        if (docName.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter a document name!");
+            return;
+        }
+        documentStack.push(docName);
+        inputField.setText("");
+        updateDisplays();
+    }
+
+    private void processDocument() {
+        if (documentStack.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No documents to process!");
+            return;
+        }
+        String processed = documentStack.pop();
+        processedList.add(processed);
+        JOptionPane.showMessageDialog(this, "Processed document: " + processed);
+        updateDisplays();
+    }
+
+    private void updateDisplays() {
+        // Update stack display
+        stackDisplay.setText("");
+        Stack<String> tempStack = new Stack<>();
+        tempStack.addAll(documentStack);
+        while (!tempStack.isEmpty()) {
+            stackDisplay.append("• " + tempStack.pop() + "\n");
+        }
+
+        // Update processed display
+        processedDisplay.setText("");
+        for (int i = processedList.size() - 1; i >= 0; i--) {
+            processedDisplay.append("• " + processedList.get(i) + "\n");
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            OfficeDocumentStack frame = new OfficeDocumentStack();
+            frame.setVisible(true);
+        });
+    }
+}
