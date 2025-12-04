@@ -1,0 +1,269 @@
+class DashboardPanel extends JPanel {
+    private StackTransactionGUI main;
+
+    public DashboardPanel(StackTransactionGUI main) {
+        this.main = main;
+        setLayout(new BorderLayout());
+        setBackground(new Color(7, 30, 60));
+
+        JLabel title = new JLabel("Transaction Management", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        title.setForeground(Color.WHITE);
+        title.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        add(title, BorderLayout.NORTH);
+
+        JPanel content = new JPanel(new BorderLayout());
+        content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        content.setBackground(new Color(7, 30, 60));
+
+        JPanel topButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 8));
+        topButtons.setBackground(new Color(7, 30, 60));
+
+        String[] topLabels = {"Add Transaction", "Undo", "View Top", "Search", "Logout"};
+
+        // panels for input
+        JPanel idField = makeLabeledField("TRANSACTION ID");
+        JTextField idInput = (JTextField) idField.getComponent(1);
+
+        JPanel userField = makeLabeledField("USER NAME");
+        JTextField userInput = (JTextField) userField.getComponent(1);
+
+        // text logs reference
+        JTextArea logs = new JTextArea();
+
+        // Create buttons
+        JButton addBtn = null, undoBtn = null, viewTopBtn = null, searchBtn = null;
+
+        for (String lbl : topLabels) {
+            JButton b = new JButton(lbl);
+            b.setPreferredSize(new Dimension(120, 36));
+
+            if (lbl.equals("Logout")) {
+                b.addActionListener(e -> {
+                    JOptionPane.showMessageDialog(null, "You Have Logout!");
+                    main.showCard("Login");
+                });
+            }
+
+            if (lbl.equals("Add Transaction")) addBtn = b;
+            if (lbl.equals("Undo")) undoBtn = b;
+            if (lbl.equals("View Top")) viewTopBtn = b;
+            if (lbl.equals("Search")) searchBtn = b;
+
+            topButtons.add(b);
+        }
+        content.add(topButtons, BorderLayout.NORTH);
+
+        JPanel centerSplit = new JPanel(new GridLayout(1, 2, 12, 12));
+        centerSplit.setBackground(new Color(7, 30, 60));
+
+        JPanel left = new JPanel();
+        left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
+        left.setBackground(new Color(28, 49, 73));
+        left.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(4, 8, 4, 8),
+                BorderFactory.createTitledBorder(null, "Transaction Input", 0, 0, new Font("Segoe UI", Font.BOLD, 18), Color.WHITE)));
+
+        left.add(Box.createRigidArea(new Dimension(0, 6)));
+        left.add(idField);
+        left.add(Box.createRigidArea(new Dimension(0, 6)));
+        left.add(userField);
+        left.add(Box.createRigidArea(new Dimension(0, 6)));
+
+        JPanel typeAmount = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
+        typeAmount.setBackground(new Color(28, 49, 73));
+
+        JLabel typeLabel = new JLabel("Type");
+        typeLabel.setForeground(Color.WHITE);
+        typeLabel.setPreferredSize(new Dimension(40, 30));
+
+        JComboBox<String> typeCombo = new JComboBox<>(new String[]{"Withdraw", "Deposit"});
+        typeCombo.setPreferredSize(new Dimension(120, 30));
+
+        JLabel amountLabel = new JLabel("Amount");
+        amountLabel.setForeground(Color.WHITE);
+        amountLabel.setPreferredSize(new Dimension(60, 30));
+
+        JTextField amt = new JTextField();
+        amt.setPreferredSize(new Dimension(100, 30));
+
+        typeAmount.add(typeLabel);
+        typeAmount.add(typeCombo);
+        typeAmount.add(amountLabel);
+        typeAmount.add(amt);
+
+        left.add(typeAmount);
+
+        JLabel balance = new JLabel("Balance ₱ 00.00");
+        balance.setForeground(Color.WHITE);
+        balance.setAlignmentX(Component.CENTER_ALIGNMENT);
+        left.add(balance);
+
+        JButton save = new JButton("Save Transaction");
+        save.setAlignmentX(Component.CENTER_ALIGNMENT);
+        save.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        save.setPreferredSize(new Dimension(300, 40));
+
+        left.add(save);
+        centerSplit.add(left);
+
+        // STACK DISPLAY RIGHT PANEL
+        JPanel right = new JPanel();
+        right.setBackground(new Color(28, 49, 73));
+        right.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(8, 8, 8, 8),
+                BorderFactory.createTitledBorder(null, "Transaction Stack(Recent First)", 0, 0, new Font("Segoe UI", Font.BOLD, 18), Color.WHITE)));
+        right.setLayout(new BoxLayout(right, BoxLayout.Y_AXIS));
+
+        // save reference for stack boxes
+        main.stackBoxes.clear();
+
+        for (int i = 3; i >= 1; i--) {
+            JPanel box = new JPanel(new BorderLayout());
+            box.setPreferredSize(new Dimension(320, 90));
+            box.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+            box.setBackground(new Color(62, 82, 102));
+            box.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+
+            JTextArea data = new JTextArea("");
+            data.setEditable(false);
+            data.setOpaque(false);
+            data.setForeground(Color.WHITE);
+            data.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            data.setBorder(null);
+            box.add(data, BorderLayout.CENTER);
+
+            JLabel idx = new JLabel(String.valueOf(i));
+            idx.setForeground(Color.WHITE);
+            idx.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+            box.add(idx, BorderLayout.EAST);
+
+            main.stackBoxes.add(data);
+            right.add(box);
+            right.add(Box.createRigidArea(new Dimension(0, 8)));
+        }
+
+        centerSplit.add(right);
+        content.add(centerSplit, BorderLayout.CENTER);
+
+        // RECENT LOGS
+        JPanel bottom = new JPanel(new BorderLayout());
+        bottom.setBackground(new Color(7, 30, 60));
+        bottom.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(8, 8, 8, 8),
+                BorderFactory.createTitledBorder(null, "Recent Transaction", 0, 0, new Font("Segoe UI", Font.BOLD, 16), Color.WHITE)));
+
+        logs.setEditable(false);
+        logs.setBackground(new Color(44, 62, 80));
+        logs.setForeground(Color.WHITE);
+
+        bottom.add(new JScrollPane(logs), BorderLayout.CENTER);
+        content.add(bottom, BorderLayout.SOUTH);
+
+        add(content, BorderLayout.CENTER);
+
+        //-----------------------------------------------------------
+        // 🌸 ADD TRANSACTION FUNCTION
+        //-----------------------------------------------------------
+        save.addActionListener(e -> {
+            String id = idInput.getText().trim();
+            String user = userInput.getText().trim();
+            String amountText = amt.getText().trim();
+            String type = typeCombo.getSelectedItem().toString();
+
+            if (id.isEmpty() || user.isEmpty() || amountText.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill all fields!");
+                return;
+            }
+            if (!amountText.matches("\\d+")) {
+                JOptionPane.showMessageDialog(this, "Amount must be numbers only!");
+                return;
+            }
+
+            int amount = Integer.parseInt(amountText);
+
+            String formatted = "Type: " + type +
+                    "\nID: " + id +
+                    "\nUser: " + user +
+                    "\nAmount: ₱" + amount;
+
+            main.transactionStack.push(formatted);
+            main.updateStackDisplay();
+            logs.append("Added: " + id + "\n");
+
+            balance.setText("Balance ₱ " + amount);
+
+            idInput.setText("");
+            userInput.setText("");
+            amt.setText("");
+
+            JOptionPane.showMessageDialog(this, "Transaction Added!");
+        });
+
+        //-----------------------------------------------------------
+        // 🌸 UNDO FUNCTION
+        //-----------------------------------------------------------
+        undoBtn.addActionListener(e -> {
+            if (main.transactionStack.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No transactions to undo!");
+                return;
+            }
+
+            String removed = main.transactionStack.pop();
+            main.updateStackDisplay();
+            logs.append("Undo: " + removed.split("\n")[1] + "\n");
+        });
+
+        //-----------------------------------------------------------
+        // 🌸 VIEW TOP FUNCTION
+        //-----------------------------------------------------------
+        viewTopBtn.addActionListener(e -> {
+            if (main.transactionStack.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Stack is empty!");
+                return;
+            }
+
+            String top = main.transactionStack.peek();
+            JOptionPane.showMessageDialog(this, top, "Top Transaction", JOptionPane.INFORMATION_MESSAGE);
+        });
+
+        //-----------------------------------------------------------
+        // 🌸 SEARCH FUNCTION
+        //-----------------------------------------------------------
+        searchBtn.addActionListener(e -> {
+            String key = JOptionPane.showInputDialog("Enter Transaction ID or User:");
+
+            if (key == null || key.trim().isEmpty()) return;
+
+            for (String s : main.transactionStack) {
+                if (s.contains("ID: " + key) || s.contains("User: " + key)) {
+                    JOptionPane.showMessageDialog(this, s, "Search Result", JOptionPane.INFORMATION_MESSAGE);
+                    return;
+                }
+            }
+
+            JOptionPane.showMessageDialog(this, "No matching transaction found!");
+        });
+    }
+
+
+    private JPanel makeLabeledField(String label) {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setBackground(new Color(28, 49, 73));
+
+        JLabel l = new JLabel(label);
+        l.setForeground(Color.WHITE);
+        l.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+
+        JTextField t = new JTextField();
+        t.setPreferredSize(new Dimension(320, 36));
+
+        p.add(l, BorderLayout.NORTH);
+        p.add(t, BorderLayout.CENTER);
+        p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
+
+        return p;
+    }
+}
+
+
